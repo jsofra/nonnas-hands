@@ -1,0 +1,13 @@
+{
+    "name": "nonnas-hands",
+    "version": "0.0.1",
+    "private": true,
+    "devDependencies": {
+        "shadow-cljs": "2.8.110"
+    },
+    "dependencies": {
+        "firebase": "^7.14.3",
+        "simple-peer": "9.7.2",
+        "pixi.js": "5.2.4"
+    }
+}

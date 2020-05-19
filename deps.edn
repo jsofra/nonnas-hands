@@ -1,0 +1,13 @@
+{:paths   ["src" "resources"]
+ :deps    {org.clojure/clojurescript {:mvn/version "1.10.758"}
+           org.clojure/core.async    {:mvn/version "1.1.587"}
+           impi                      {:git/url "https://github.com/jsofra/impi"
+                                      :sha     "2c370f2a77e2ea759e37268c077026479d155fe0"}}
+ :aliases {:shadow-cljs {:extra-deps {thheller/shadow-cljs {:mvn/version "2.8.110"}}
+                         :main-opts  ["-m" "shadow.cljs.devtools.cli"]}
+           :dev         {:extra-paths ["dev"]
+                         :extra-deps  {binaryage/devtools   {:mvn/version "1.0.0"}
+                                       cider/piggieback     {:mvn/version "0.4.2"}
+                                       thheller/shadow-cljs {:mvn/version "2.8.110"}}}
+           :test        {:extra-deps {lambdaisland/kaocha      {:mvn/version "1.0-612"}
+                                      lambdaisland/kaocha-cljs {:mvn/version "0.0-71"}}}}}

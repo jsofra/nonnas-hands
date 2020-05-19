@@ -1,0 +1,10 @@
+{:deps   true
+ :builds {:briscola {:target           :browser
+                     :asset-path       "/js"
+                     :output-dir       "resources/public/js"
+                     :devtools
+                     {:http-root "resources/public"
+                      :http-port 3000
+                      :preloads  [devtools.preload]}
+                     :compiler-options {:infer-externs :auto}
+                     :modules          {:main {:entries [nonnas-hands.briscola.ui.browser]}}}}}
