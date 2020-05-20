@@ -35,7 +35,7 @@
 (defmethod impi/update-prop! :card/flipped [object _ _ rotation]
   (.set (.-skew object) 0 (* rotation PIXI/DEG_TO_RAD)))
 
-(defmethod impi/update-prop! :pixi.sprite/tint [object _ _ tint]
+(defmethod impi/update-prop! :pixi.object/tint [object _ _ tint]
   (set! (.-tint object) tint))
 
 (defmethod impi/update-prop! :pixi.text/anchor [object _ _ [x y]]

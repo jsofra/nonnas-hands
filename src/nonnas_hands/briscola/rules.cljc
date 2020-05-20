@@ -12,7 +12,7 @@
 (def points {:uno     11
              :tre     10
              :re      4
-             :cavello 3
+             :cavallo 3
              :fante   2})
 
 (defn cards-to-remove
@@ -39,14 +39,17 @@
       [(mapv first pairs) (mapv second pairs)])
     (mapv vector players)))
 
-(defn deal-cards
+(defn deal-init-cards
   "
   The initial deal is 3 cards for each player.
   "
   [{:keys [player-ids deck] :as game-state}]
   (-> game-state
       (update :deck #(drop (* 3 (count player-ids)) %))
-      (assoc :hands (into {} (map vector player-ids (partition 3 deck))))))
+      (assoc :players (into {} (map (fn [id hand] [id {:hand hand
+                                                       :name id}])
+                                    player-ids
+                                    (partition 3 deck))))))
 
 (defn draw-briscola
   "
@@ -67,14 +70,12 @@
   The teams are also formed.
   "
   [deck player-ids]
-  (let [cards-to-remove    (cards-to-remove (count player-ids))
-        empty-player-slots (into {} (map (fn [id] [id []]) player-ids))]
+  (let [cards-to-remove    (cards-to-remove (count player-ids))]
     {:deck              (shuffle (remove cards-to-remove deck))
      :removed-cards     cards-to-remove
      :player-ids        player-ids
      :teams             (form-teams player-ids)
-     :hands             empty-player-slots
-     :tricks            empty-player-slots
+     :players           (zipmap player-ids (repeat {:hand [] :tricks []}))
      :remaining-players player-ids
      :trick-pile        []}))
 
@@ -87,6 +88,6 @@
   "
   [game-state player-id card]
   (-> game-state
-      (update-in [:hands player-id] (partial remove #{card}))
+      (update-in [player-id :hands] (partial remove #{card}))
       (update :trick-pile conj [player-id card])
       (update :remaining-players rest)))
