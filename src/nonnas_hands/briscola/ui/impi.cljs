@@ -49,3 +49,15 @@
 
 (defmethod impi/update-prop! :pixi.object/pivot [object _ _ [x y]]
   (set! (.-pivot object) (PIXI/Point. x y)))
+
+(defmethod impi/update-prop! :pixi.object/z-index [object _ _ z-index]
+  (set! (.-zIndex object) z-index))
+
+(defmethod impi/update-prop! :pixi.container/sortable-children? [object _ _ sortable-children?]
+  (set! (.-sortableChildren object) sortable-children?))
+
+(defmethod impi/update-prop! :pixi.text.style/drop-shadow-alpha [object _ _ alpha]
+  (set! (.-dropShadowAlpha object) alpha))
+
+(defmethod impi/update-prop! :pixi.text.style/drop-shadow-color [object _ _ color]
+  (set! (.-dropShadowColor object) color))

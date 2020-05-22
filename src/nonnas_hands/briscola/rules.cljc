@@ -77,7 +77,11 @@
      :teams             (form-teams player-ids)
      :players           (zipmap player-ids (repeat {:hand [] :tricks []}))
      :remaining-players player-ids
-     :trick-pile        []}))
+     :trick-pile        []
+     :current-player    (rand-nth player-ids)}))
+
+(defn assign-player [game-state player-id]
+  (assoc game-state :this-player player-id))
 
 (defn play-card
   "

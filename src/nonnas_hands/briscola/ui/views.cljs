@@ -1,6 +1,7 @@
 (ns nonnas-hands.briscola.ui.views
   (:require [nonnas-hands.briscola.rules :as rules]
-            ["pixi.js" :as PIXI]))
+            ["pixi.js" :as PIXI]
+            [goog.color :as color]))
 
 (defn background []
   {:impi/key             :game/tabletop
@@ -61,16 +62,42 @@
 (def side-face "🤔")
 (def shrug-face "🤨")
 
-(defn render-player [{:keys [hand face name] :or {face default-face}} pos]
-  {:impi/key             name
-   :pixi.object/type     :pixi.object.type/container
-   :pixi.object/position (let [[x y] pos]
-                           [x (- y 30)])
+(defn current-player-shadow [current-player-pulse]
+  {:pixi.text.style/drop-shadow          true
+   :pixi.text.style/drop-shadow-angle    (* current-player-pulse 360 PIXI/DEG_TO_RAD)
+   :pixi.text.style/drop-shadow-blur     12
+   :pixi.text.style/drop-shadow-alpha    1
+   :pixi.text.style/drop-shadow-color    0x00ff26
+   :pixi.text.style/drop-shadow-distance 8})
+
+(defn current-player-tint [current-player-pulse]
+  (let [green (color/hexToRgb "#00ff26")
+        white (color/hexToRgb "#ffffff")]
+    (->
+     (apply color/rgbToHex (color/blend green white current-player-pulse))
+     (clojure.string/replace #"#" "0x")
+     js/Number.
+     (js/parseInt 10))))
+
+(defn render-player
+  [{:keys [hand face name] :or {face default-face} :as player}
+   hover-card
+   this-player?
+   current-player?
+   current-player-pulse
+   pos]
+  {:impi/key                          name
+   :pixi.object/type                  :pixi.object.type/container
+   :pixi.object/position              (let [[x y] pos]
+                                        [x (- y 30)])
+   :pixi.event/mouse-out              [:hand/hover-card {:card nil}]
+   :pixi.object/interactive?          true
+   :pixi.container/sortable-children? true
    :pixi.container/children
    (let [cards (sort-cards hand)]
      (concat
       (map-indexed
-       (fn [i c]
+       (fn [i card]
          {:impi/key             (str name "-card-" i)
           :pixi.object/type     :pixi.object.type/container
           :pixi.object/rotation (let [n     (count cards)
@@ -84,55 +111,69 @@
           :pixi.object/position [(let [space (/ 140 (count cards))]
                                    (- (* i space) space))
                                  (* 0.5 card-h)]
+          :pixi.object/z-index  (if (= card hover-card) 100 0)
           :pixi.container/children
-          [(-> (render-card c)
+          [(-> (render-card (assoc card :flipped (if this-player? 0 180)))
                (assoc :pixi.object/pivot [0 (* card-h 0.5)])
+               (cond-> this-player?
+                 (assoc :pixi.event/mouse-over [:hand/hover-card {:card card}]
+                        :pixi.object/interactive? true))
                (update :pixi.container/children
                        conj
                        {:impi/key             (str "game/hand-" i "-points")
                         :pixi.object/type     :pixi.object.type/text
                         :pixi.object/position [(* card-w -0.48) (* card-h -0.5)]
-                        :pixi.text/text       (str (get rules/points (:rank c) ""))
+                        :pixi.text/text       (str (get rules/points (:rank card) ""))
                         :pixi.text/style      {:pixi.text.style/align       "right"
                                                :pixi.text.style/fill        0x1a77ba
                                                :pixi.text.style/font-weight "normal"
                                                :pixi.text.style/font-family "Arial"
                                                :pixi.text.style/font-size   28}}))]})
        cards)
-      [{:impi/key             (str "game/hand-" name "-faces")
+      [{:impi/key             (str "game/hand-" name "-names")
         :pixi.object/type     :pixi.object.type/text
-        :pixi.object/position [(* card-w -0.7) (* card-h 0.55)]
-        :pixi.text/text       face
-        :pixi.text/style      {:pixi.text.style/align       "right"
-                               :pixi.text.style/fill        0x1a77ba
-                               :pixi.text.style/font-weight "normal"
-                               :pixi.text.style/font-family "Arial"
-                               :pixi.text.style/font-size   62}}
-       {:impi/key             (str "game/hand-" name "-names")
-        :pixi.object/type     :pixi.object.type/text
-        :pixi.object/position [(* card-w -0.1) (* card-h 0.65)]
+        :pixi.object/position [(* card-w -0.2) (* card-h 0.55)]
         :pixi.text/text       name
         :pixi.text/style      {:pixi.text.style/align       "right"
                                :pixi.text.style/fill        0x1a77ba
                                :pixi.text.style/font-weight "normal"
                                :pixi.text.style/font-family "Arial"
                                :pixi.text.style/font-size   28}}
-       ]))})
+       {:impi/key             (str "game/hand-" name "-faces")
+        :pixi.object/type     :pixi.object.type/text
+        :pixi.object/position [(* card-w -0.8) (* card-h 0.45)]
+        :pixi.text/text       face
+        :pixi.text/style      {:pixi.text.style/align       "right"
+                               :pixi.text.style/font-weight "normal"
+                               :pixi.text.style/font-family "Arial"
+                               :pixi.text.style/font-size   62}
+        :pixi.object/tint     (if current-player?
+                                (current-player-tint current-player-pulse)
+                                0xffffff)}]))})
 
 (defn point-on-circle [radius angle]
   [(* radius (Math/sin (* angle PIXI/DEG_TO_RAD)))
    (* radius (Math/cos (* angle PIXI/DEG_TO_RAD)))])
 
-(defn render-players [players radius]
+(defn render-players
+  [{{:keys [players this-player current-player]} :game-state
+    {:keys [hover-card current-player-pulse]}          :ui-state}
+   radius]
   {:impi/key         :game/hands
    :pixi.object/type :pixi.object.type/container
    :pixi.container/children
-   (map-indexed (fn [i player]
+   (map-indexed (fn [i [player-id player]]
                   (let [space (/ 360 (count players))]
-                    (render-player player (point-on-circle radius (* space i)))))
+                    (render-player player
+                                   hover-card
+                                   (= player-id this-player)
+                                   (= player-id current-player)
+                                   current-player-pulse
+                                   (point-on-circle radius (* space i)))))
                 players)})
 
-(defn render-deck [{:keys [deck briscola]} pos]
+(defn render-deck
+  [{{:keys [deck briscola]} :game-state} pos]
   {:impi/key         :game/deck
    :pixi.object/type :pixi.object.type/container
    :pixi.container/children
