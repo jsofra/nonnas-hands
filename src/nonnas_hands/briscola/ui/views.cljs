@@ -62,14 +62,6 @@
 (def side-face "🤔")
 (def shrug-face "🤨")
 
-(defn current-player-shadow [current-player-pulse]
-  {:pixi.text.style/drop-shadow          true
-   :pixi.text.style/drop-shadow-angle    (* current-player-pulse 360 PIXI/DEG_TO_RAD)
-   :pixi.text.style/drop-shadow-blur     12
-   :pixi.text.style/drop-shadow-alpha    1
-   :pixi.text.style/drop-shadow-color    0x00ff26
-   :pixi.text.style/drop-shadow-distance 8})
-
 (defn current-player-tint [current-player-pulse]
   (let [green (color/hexToRgb "#00ff26")
         white (color/hexToRgb "#ffffff")]
@@ -80,96 +72,112 @@
      (js/parseInt 10))))
 
 (defn render-player
-  [{:keys [hand face name] :or {face default-face} :as player}
+  [{:keys [hand face id] :or {face default-face} :as player}
    hover-card
    this-player?
    current-player?
    current-player-pulse
-   pos]
-  {:impi/key                          name
-   :pixi.object/type                  :pixi.object.type/container
-   :pixi.object/position              (let [[x y] pos]
-                                        [x (- y 30)])
-   :pixi.event/mouse-out              [:hand/hover-card {:card nil}]
-   :pixi.object/interactive?          true
-   :pixi.container/sortable-children? true
+   pos
+   trick-card
+   trick-pos]
+  {:impi/key         (str "player-" id "-container")
+   :pixi.object/type :pixi.object.type/container
    :pixi.container/children
-   (let [cards (sort-cards hand)]
-     (concat
-      (map-indexed
-       (fn [i card]
-         {:impi/key             (str name "-card-" i)
-          :pixi.object/type     :pixi.object.type/container
-          :pixi.object/rotation (let [n     (count cards)
-                                      angle (* 25 (/ (dec n) 5))
-                                      from  (* -1 angle)
-                                      to    angle]
-                                  (if (= n 1)
-                                    0
-                                    (* (+ from (* (* (/ (Math/abs (- from to)) (dec n))) i))
-                                       PIXI/DEG_TO_RAD)))
-          :pixi.object/position [(let [space (/ 140 (count cards))]
-                                   (- (* i space) space))
-                                 (* 0.5 card-h)]
-          :pixi.object/z-index  (if (= card hover-card) 100 0)
-          :pixi.container/children
-          [(-> (render-card (assoc card :flipped (if this-player? 0 180)))
-               (assoc :pixi.object/pivot [0 (* card-h 0.5)])
-               (cond-> this-player?
-                 (assoc :pixi.event/mouse-over [:hand/hover-card {:card card}]
-                        :pixi.object/interactive? true))
-               (update :pixi.container/children
-                       conj
-                       {:impi/key             (str "game/hand-" i "-points")
-                        :pixi.object/type     :pixi.object.type/text
-                        :pixi.object/position [(* card-w -0.48) (* card-h -0.5)]
-                        :pixi.text/text       (str (get rules/points (:rank card) ""))
-                        :pixi.text/style      {:pixi.text.style/align       "right"
-                                               :pixi.text.style/fill        0x1a77ba
-                                               :pixi.text.style/font-weight "normal"
-                                               :pixi.text.style/font-family "Arial"
-                                               :pixi.text.style/font-size   28}}))]})
-       cards)
-      [{:impi/key             (str "game/hand-" name "-names")
-        :pixi.object/type     :pixi.object.type/text
-        :pixi.object/position [(* card-w -0.2) (* card-h 0.55)]
-        :pixi.text/text       name
-        :pixi.text/style      {:pixi.text.style/align       "right"
-                               :pixi.text.style/fill        0x1a77ba
-                               :pixi.text.style/font-weight "normal"
-                               :pixi.text.style/font-family "Arial"
-                               :pixi.text.style/font-size   28}}
-       {:impi/key             (str "game/hand-" name "-faces")
-        :pixi.object/type     :pixi.object.type/text
-        :pixi.object/position [(* card-w -0.8) (* card-h 0.45)]
-        :pixi.text/text       face
-        :pixi.text/style      {:pixi.text.style/align       "right"
-                               :pixi.text.style/font-weight "normal"
-                               :pixi.text.style/font-family "Arial"
-                               :pixi.text.style/font-size   62}
-        :pixi.object/tint     (if current-player?
-                                (current-player-tint current-player-pulse)
-                                0xffffff)}]))})
+   (concat
+    (when trick-card
+      [{:impi/key             (str "player-" id "-trick")
+        :pixi.object/type     :pixi.object.type/container
+        :pixi.object/position trick-pos
+        :pixi.container/children
+        [(render-card trick-card)]}])
+    [{:impi/key                          (str "player-" id)
+      :pixi.object/type                  :pixi.object.type/container
+      :pixi.object/position              (let [[x y] pos]
+                                           [x (- y 30)])
+      :pixi.event/mouse-out              [:hand/hover-card {:card nil}]
+      :pixi.object/interactive?          true
+      :pixi.container/sortable-children? true
+      :pixi.container/children
+      (let [cards (sort-cards hand)]
+        (concat
+         (map-indexed
+          (fn [i card]
+            {:impi/key             (str id "-card-" i)
+             :pixi.object/type     :pixi.object.type/container
+             :pixi.object/rotation (let [n     (count cards)
+                                         angle (* 25 (/ (dec n) 5))
+                                         from  (* -1 angle)
+                                         to    angle]
+                                     (if (= n 1)
+                                       0
+                                       (* (+ from (* (* (/ (Math/abs (- from to)) (dec n))) i))
+                                          PIXI/DEG_TO_RAD)))
+             :pixi.object/position [(let [space 50]
+                                      (- (* i space) (* (dec (count cards)) space 0.5)))
+                                    (* card-h 0.5)]
+             :pixi.object/z-index  (if (= card hover-card) 100 0)
+             :pixi.container/children
+             [(-> (render-card (assoc card :flipped (if this-player? 0 180)))
+                  (assoc :pixi.object/pivot [0 (* card-h 0.5)])
+                  (cond-> this-player?
+                    (assoc :pixi.event/mouse-over [:hand/hover-card {:card card}]
+                           :pixi.object/interactive? true))
+                  (update :pixi.container/children
+                          conj
+                          {:impi/key             (str "game/hand-" i "-points")
+                           :pixi.object/type     :pixi.object.type/text
+                           :pixi.object/position [(* card-w -0.48) (* card-h -0.5)]
+                           :pixi.text/text       (str (get rules/points (:rank card) ""))
+                           :pixi.text/style      {:pixi.text.style/align       "right"
+                                                  :pixi.text.style/fill        0x1a77ba
+                                                  :pixi.text.style/font-weight "normal"
+                                                  :pixi.text.style/font-family "Arial"
+                                                  :pixi.text.style/font-size   28}}))]})
+          cards)
+         [{:impi/key             (str "game/hand-" id "-names")
+           :pixi.object/type     :pixi.object.type/text
+           :pixi.object/position [(* card-w -0.2) (* card-h 0.55)]
+           :pixi.object/z-index  200
+           :pixi.text/text       id
+           :pixi.text/style      {:pixi.text.style/align       "right"
+                                  :pixi.text.style/fill        0x1a77ba
+                                  :pixi.text.style/font-weight "normal"
+                                  :pixi.text.style/font-family "Brush Script MT"
+                                  :pixi.text.style/font-size   40}}
+          {:impi/key             (str "game/hand-" id "-faces")
+           :pixi.object/type     :pixi.object.type/text
+           :pixi.object/position [(* card-w -0.8) (* card-h 0.45)]
+           :pixi.object/z-index  200
+           :pixi.text/text       face
+           :pixi.text/style      {:pixi.text.style/align       "right"
+                                  :pixi.text.style/font-weight "normal"
+                                  :pixi.text.style/font-family "Arial"
+                                  :pixi.text.style/font-size   62}
+           :pixi.object/tint     (if current-player?
+                                   (current-player-tint current-player-pulse)
+                                   0xffffff)}]))}])})
 
 (defn point-on-circle [radius angle]
   [(* radius (Math/sin (* angle PIXI/DEG_TO_RAD)))
    (* radius (Math/cos (* angle PIXI/DEG_TO_RAD)))])
 
 (defn render-players
-  [{{:keys [players this-player current-player]} :game-state
-    {:keys [hover-card current-player-pulse]}          :ui-state}
+  [{{:keys [players this-player current-player trick-pile]}         :game-state
+    {{:keys [hover-card pulse]} :players} :ui-state}
    radius]
   {:impi/key         :game/hands
    :pixi.object/type :pixi.object.type/container
    :pixi.container/children
    (map-indexed (fn [i [player-id player]]
-                  (let [space (/ 360 (count players))]
+                  (let [spacing (/ 360 (count players))]
                     (render-player player
                                    hover-card
                                    (= player-id this-player)
                                    (= player-id current-player)
-                                   current-player-pulse
-                                   (point-on-circle radius (* space i)))))
+                                   pulse
+                                   (point-on-circle radius (* spacing i))
+                                   (get trick-pile player-id)
+                                   (point-on-circle (* radius 0.25) (* spacing i)))))
                 players)})
 
 (defn render-deck

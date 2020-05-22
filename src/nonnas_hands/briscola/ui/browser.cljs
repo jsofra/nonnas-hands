@@ -18,10 +18,16 @@
                         (rules/init-game-state ["James" "Nikki" "Susanna" "Tanya"])
                         (rules/assign-player "James")
                         rules/draw-briscola
-                        rules/deal-init-cards)]
+                        rules/deal-init-cards
+                        (as-> s
+                          (rules/play-card s "James" (get-in s [:players "James" :hand 0]))
+                          (rules/play-card s "Tanya" (get-in s [:players "Tanya" :hand 0]))
+                          (rules/play-card s "Susanna" (get-in s [:players "Susanna" :hand 0]))
+                          (rules/play-card s "Nikki" (get-in s [:players "Nikki" :hand 0])))
+                        )]
      {:game-state game-state
-      :ui-state   {:hover-card           nil
-                   :current-player-pulse 0}}))
+      :ui-state   {:players {:hover-card nil
+                             :pulse      0}}}))
   (async/put! msg-chan {:type :event
                         :key  :player/pulse
                         :args {:duration 160}}))
@@ -145,9 +151,9 @@
   (js/console.log "init")
   (reset))
 
-#_(defn ^:dev/after-load start []
+#_(defn ^:dev/after-load after []
     (js/console.log "start")
-    (render-state (init-stage)))
+    (reset))
 
 #_(defn ^:dev/before-load stop []
     (js/console.log "stop")

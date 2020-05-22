@@ -46,8 +46,8 @@
   [{:keys [player-ids deck] :as game-state}]
   (-> game-state
       (update :deck #(drop (* 3 (count player-ids)) %))
-      (assoc :players (into {} (map (fn [id hand] [id {:hand hand
-                                                       :name id}])
+      (assoc :players (into {} (map (fn [id hand] [id {:hand (into [] hand)
+                                                       :id   id}])
                                     player-ids
                                     (partition 3 deck))))))
 
@@ -77,10 +77,14 @@
      :teams             (form-teams player-ids)
      :players           (zipmap player-ids (repeat {:hand [] :tricks []}))
      :remaining-players player-ids
-     :trick-pile        []
+     :trick-pile        {}
      :current-player    (rand-nth player-ids)}))
 
-(defn assign-player [game-state player-id]
+(defn assign-player
+  "
+  Assigns a player for `this` instance of the game.
+  "
+  [game-state player-id]
   (assoc game-state :this-player player-id))
 
 (defn play-card
@@ -92,6 +96,6 @@
   "
   [game-state player-id card]
   (-> game-state
-      (update-in [player-id :hands] (partial remove #{card}))
+      (update-in [:players player-id :hand] (fn [hand] (into [] (remove #{card} hand))))
       (update :trick-pile conj [player-id card])
       (update :remaining-players rest)))

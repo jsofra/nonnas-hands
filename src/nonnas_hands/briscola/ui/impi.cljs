@@ -56,6 +56,9 @@
 (defmethod impi/update-prop! :pixi.container/sortable-children? [object _ _ sortable-children?]
   (set! (.-sortableChildren object) sortable-children?))
 
+(defmethod impi/update-prop! :pixi.container/interactive-children? [object _ _ interactive-children?]
+  (set! (.-interactiveChildren object) interactive-children?))
+
 (defmethod impi/update-prop! :pixi.text.style/drop-shadow-alpha [object _ _ alpha]
   (set! (.-dropShadowAlpha object) alpha))
 

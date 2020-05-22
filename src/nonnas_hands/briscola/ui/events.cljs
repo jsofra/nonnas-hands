@@ -6,7 +6,7 @@
   [{{:keys [card]} :args :as e}]
   [{:type      :update
     :key       :hand/select-card-update
-    :update-fn #(update % :ui-state assoc :hover-card card)}])
+    :update-fn #(update % :ui-state assoc-in [:players :hover-card] card)}])
 
 (defn current-player-pulse [duration]
   {:type       :animation
@@ -19,7 +19,7 @@
                     :key  :player/pulse-update
                     :update-fn
                     (fn [state]
-                      (assoc-in state [:ui-state :current-player-pulse] t))})}
+                      (assoc-in state [:ui-state :players :pulse] t))})}
                 {:progress 0
                  :duration (* duration 0.5)
                  :update-gen
@@ -28,7 +28,7 @@
                     :key  :player/pulse-shrink-update
                     :update-fn
                     (fn [state]
-                      (assoc-in state [:ui-state :current-player-pulse] (Math/abs (dec t))))})}]
+                      (assoc-in state [:ui-state :players :pulse] (Math/abs (dec t))))})}]
    :post-steps (fn [{:game/keys [paused?]}]
                  (when (not paused?)
                    [{:type :event
