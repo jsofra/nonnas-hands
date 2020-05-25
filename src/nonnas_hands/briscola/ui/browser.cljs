@@ -20,10 +20,12 @@
                         rules/draw-briscola
                         rules/deal-init-cards
                         (as-> s
-                          (rules/play-card s "James" (get-in s [:players "James" :hand 0]))
-                          (rules/play-card s "Tanya" (get-in s [:players "Tanya" :hand 0]))
-                          (rules/play-card s "Susanna" (get-in s [:players "Susanna" :hand 0]))
-                          (rules/play-card s "Nikki" (get-in s [:players "Nikki" :hand 0])))
+                          #_(rules/play-card s "James" (get-in s [:players "James" :hand 0]))
+                          #_(rules/play-card s "Nikki" (get-in s [:players "Nikki" :hand 0]))
+                          #_(rules/play-card s "Susanna" (get-in s [:players "Susanna" :hand 0]))
+                          #_(rules/play-card s "Tanya" (get-in s [:players "Tanya" :hand 0]))
+
+                          )
                         )]
      {:game-state game-state
       :ui-state   {:players {:hover-card nil
@@ -50,11 +52,12 @@
                                          (/ js/window.innerHeight 2)]
                   :pixi.container/children
                   [(views/background)
-                   (views/render-players state
-                                         (/ js/window.innerHeight 2.8 scale))
                    (views/render-deck state
-                                      [(/ js/window.innerHeight 2.6 scale)
-                                       (/ js/window.innerHeight -3.2 scale)])]}}))
+                                      (min (/ js/window.innerWidth 2.8 scale) 300)
+                                      (/ js/window.innerHeight 2.8 scale))
+                   (views/render-players state
+                                         (min (/ js/window.innerWidth 2.8 scale) 420)
+                                         (/ js/window.innerHeight 2.8 scale))]}}))
 
 (defn compact-events [events-map {:keys [parent] :as event}]
   (update events-map

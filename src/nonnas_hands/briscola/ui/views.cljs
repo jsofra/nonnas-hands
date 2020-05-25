@@ -157,43 +157,49 @@
                                    (current-player-tint current-player-pulse)
                                    0xffffff)}]))}])})
 
-(defn point-on-circle [radius angle]
-  [(* radius (Math/sin (* angle PIXI/DEG_TO_RAD)))
-   (* radius (Math/cos (* angle PIXI/DEG_TO_RAD)))])
+(defn point-on-ellipse [a b angle]
+  [(* a (Math/sin (* (- 360 angle) PIXI/DEG_TO_RAD)))
+   (* b (Math/cos (* (- 360 angle) PIXI/DEG_TO_RAD)))])
 
 (defn render-players
-  [{{:keys [players this-player current-player trick-pile]}         :game-state
-    {{:keys [hover-card pulse]} :players} :ui-state}
-   radius]
+  [{{:keys [player-ids players this-player current-player trick-pile]} :game-state
+    {{:keys [hover-card pulse]} :players}                              :ui-state}
+   a b]
   {:impi/key         :game/hands
    :pixi.object/type :pixi.object.type/container
    :pixi.container/children
-   (map-indexed (fn [i [player-id player]]
-                  (let [spacing (/ 360 (count players))]
+   (map-indexed (fn [i player-id]
+                  (let [player  (get players player-id)
+                        spacing (/ 360 (count players))]
                     (render-player player
                                    hover-card
                                    (= player-id this-player)
                                    (= player-id current-player)
                                    pulse
-                                   (point-on-circle radius (* spacing i))
+                                   (point-on-ellipse a b (* spacing i))
                                    (get trick-pile player-id)
-                                   (point-on-circle (* radius 0.25) (* spacing i)))))
-                players)})
+                                   (point-on-ellipse (* a 0.25) (* b 0.25) (* spacing i)))))
+                player-ids)})
 
 (defn render-deck
-  [{{:keys [deck briscola]} :game-state} pos]
+  [{{:keys [deck briscola players]} :game-state} a b]
   {:impi/key         :game/deck
    :pixi.object/type :pixi.object.type/container
    :pixi.container/children
-   (concat
-    [(assoc (render-card briscola
-                         (let [[x y]  pos]
-                           [(- x 100) y]))
-            :pixi.object/rotation (* 270 PIXI/DEG_TO_RAD))]
-    (map-indexed
-     (fn [i card]
-       (render-card (assoc card :flipped 180)
-                    (let [[x y]  pos
-                          offset (* 1 i)]
-                      [(+ x offset) (- y offset)])))
-     deck))})
+   (let [spacing (/ 360 (count players))
+         pos     (point-on-ellipse (* a (+ 1 (* 0.3 (dec (count players)))))
+                                   (* b 1.1)
+                                   (- (* spacing (count players))
+                                      (/ spacing 2)))]
+     (concat
+      [(assoc (render-card briscola
+                           (let [[x y] pos]
+                             [(- x (/ card-w 2)) y]))
+              :pixi.object/rotation (* 270 PIXI/DEG_TO_RAD))]
+      (map-indexed
+       (fn [i card]
+         (render-card (assoc card :flipped 180)
+                      (let [[x y]  pos
+                            offset (* 1 i)]
+                        [(+ x offset) (- y offset)])))
+       deck)))})
