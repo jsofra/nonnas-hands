@@ -3,10 +3,10 @@
 (defmulti handle-event :key)
 
 (defmethod handle-event :hand/hover-card
-  [{{:keys [card]} :args :as e}]
+  [{{:keys [card player]} :args :as e}]
   [{:type      :update
     :key       :hand/select-card-update
-    :update-fn #(update % :ui-state assoc-in [:players :hover-card] card)}])
+    :update-fn #(update-in % [:players player] vary-meta assoc :hover-card card)}])
 
 (defn current-player-pulse [duration]
   {:type       :animation
@@ -17,18 +17,14 @@
                  (fn [t]
                    {:type :update
                     :key  :player/pulse-update
-                    :update-fn
-                    (fn [state]
-                      (assoc-in state [:ui-state :players :pulse] t))})}
+                    :update-fn #(update % :players vary-meta assoc :pulse t)})}
                 {:progress 0
                  :duration (* duration 0.5)
                  :update-gen
                  (fn [t]
                    {:type :update
                     :key  :player/pulse-shrink-update
-                    :update-fn
-                    (fn [state]
-                      (assoc-in state [:ui-state :players :pulse] (Math/abs (dec t))))})}]
+                    :update-fn #(update % :players vary-meta assoc :pulse (Math/abs (dec t)))})}]
    :post-steps (fn [{:game/keys [paused?]}]
                  (when (not paused?)
                    [{:type :event

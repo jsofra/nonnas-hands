@@ -14,28 +14,25 @@
 (defn init-state! []
   (reset!
    state
-   (let [game-state (-> rules/deck
-                        (rules/init-game-state ["James" "Nikki" "Susanna" "Tanya"])
-                        (rules/assign-player "James")
-                        rules/draw-briscola
-                        rules/deal-init-cards
-                        (as-> s
-                          #_(rules/play-card s "James" (get-in s [:players "James" :hand 0]))
-                          #_(rules/play-card s "Nikki" (get-in s [:players "Nikki" :hand 0]))
-                          #_(rules/play-card s "Susanna" (get-in s [:players "Susanna" :hand 0]))
-                          #_(rules/play-card s "Tanya" (get-in s [:players "Tanya" :hand 0]))
+   (-> rules/deck
+       (rules/init-game-state ["James" "Nikki" "Susanna" "Tanya"])
+       (rules/assign-player "James")
+       rules/draw-briscola
+       rules/deal-init-cards
+       (as-> s
+           #_(rules/play-card s "James" (get-in s [:players "James" :hand 0]))
+           #_(rules/play-card s "Nikki" (get-in s [:players "Nikki" :hand 0]))
+           #_(rules/play-card s "Susanna" (get-in s [:players "Susanna" :hand 0]))
+           #_(rules/play-card s "Tanya" (get-in s [:players "Tanya" :hand 0]))
 
-                          )
-                        )]
-     {:game-state game-state
-      :ui-state   {:players {:hover-card nil
-                             :pulse      0}}}))
+           )
+       ))
   (async/put! msg-chan {:type :event
                         :key  :player/pulse
                         :args {:duration 160}}))
 
 (defn render-state
-  [msg-chan {:keys [game-state] :as state}]
+  [msg-chan state]
   (let [d     1050
         scale (/ js/window.innerHeight d)]
     {:pixi/renderer {:pixi.renderer/size             [js/window.innerWidth js/window.innerHeight]

@@ -73,7 +73,6 @@
 
 (defn render-player
   [{:keys [hand face id] :or {face default-face} :as player}
-   hover-card
    this-player?
    current-player?
    current-player-pulse
@@ -94,7 +93,8 @@
       :pixi.object/type                  :pixi.object.type/container
       :pixi.object/position              (let [[x y] pos]
                                            [x (- y 30)])
-      :pixi.event/mouse-out              [:hand/hover-card {:card nil}]
+      :pixi.event/mouse-out              [:hand/hover-card {:player id
+                                                            :card   nil}]
       :pixi.object/interactive?          true
       :pixi.container/sortable-children? true
       :pixi.container/children
@@ -115,12 +115,13 @@
              :pixi.object/position [(let [space 50]
                                       (- (* i space) (* (dec (count cards)) space 0.5)))
                                     (* card-h 0.5)]
-             :pixi.object/z-index  (if (= card hover-card) 100 0)
+             :pixi.object/z-index  (if (= card (:hover-card (meta player))) 100 0)
              :pixi.container/children
              [(-> (render-card (assoc card :flipped (if this-player? 0 180)))
                   (assoc :pixi.object/pivot [0 (* card-h 0.5)])
                   (cond-> this-player?
-                    (assoc :pixi.event/mouse-over [:hand/hover-card {:card card}]
+                    (assoc :pixi.event/mouse-over [:hand/hover-card {:player id
+                                                                     :card   card}]
                            :pixi.object/interactive? true))
                   (update :pixi.container/children
                           conj
@@ -162,8 +163,7 @@
    (* b (Math/cos (* (- 360 angle) PIXI/DEG_TO_RAD)))])
 
 (defn render-players
-  [{{:keys [player-ids players this-player current-player trick-pile]} :game-state
-    {{:keys [hover-card pulse]} :players}                              :ui-state}
+  [{:keys [player-ids players this-player current-player trick-pile]}
    a b]
   {:impi/key         :game/hands
    :pixi.object/type :pixi.object.type/container
@@ -172,17 +172,16 @@
                   (let [player  (get players player-id)
                         spacing (/ 360 (count players))]
                     (render-player player
-                                   hover-card
                                    (= player-id this-player)
                                    (= player-id current-player)
-                                   pulse
+                                   (:pulse (meta players))
                                    (point-on-ellipse a b (* spacing i))
                                    (get trick-pile player-id)
                                    (point-on-ellipse (* a 0.25) (* b 0.25) (* spacing i)))))
                 player-ids)})
 
 (defn render-deck
-  [{{:keys [deck briscola players]} :game-state} a b]
+  [{:keys [deck briscola players]} a b]
   {:impi/key         :game/deck
    :pixi.object/type :pixi.object.type/container
    :pixi.container/children
