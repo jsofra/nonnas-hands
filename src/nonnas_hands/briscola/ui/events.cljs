@@ -5,8 +5,14 @@
 (defmethod handle-event :hand/hover-card
   [{{:keys [card player]} :args :as e}]
   [{:type      :update
-    :key       :hand/select-card-update
+    :key       :hand/hover-card-update
     :update-fn #(update-in % [:players player] vary-meta assoc :hover-card card)}])
+
+(defmethod handle-event :hand/select-card
+  [{{:keys [card]} :args :as e}]
+  [{:type      :update
+    :key       :hand/select-card-update
+    :update-fn #(update % :players vary-meta assoc :selected card)}])
 
 (defn current-player-pulse [duration]
   {:type       :animation
