@@ -98,4 +98,5 @@
   (-> game-state
       (update-in [:players player-id :hand] (fn [hand] (into [] (remove #{card} hand))))
       (update :trick-pile conj [player-id card])
-      (update :remaining-players rest)))
+      (update :remaining-players rest)
+      (assoc :current-player (-> game-state :remaining-players rest first))))

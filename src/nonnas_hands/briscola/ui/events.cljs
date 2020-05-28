@@ -1,4 +1,5 @@
-(ns nonnas-hands.briscola.ui.events)
+(ns nonnas-hands.briscola.ui.events
+  (:require [nonnas-hands.briscola.rules :as rules]))
 
 (defmulti handle-event :key)
 
@@ -8,11 +9,11 @@
     :key       :hand/hover-card-update
     :update-fn #(update-in % [:players player] vary-meta assoc :hover-card card)}])
 
-(defmethod handle-event :hand/select-card
-  [{{:keys [card]} :args :as e}]
+(defmethod handle-event :hand/play-card
+  [{{:keys [player card]} :args :as e}]
   [{:type      :update
-    :key       :hand/select-card-update
-    :update-fn #(update % :players vary-meta assoc :selected card)}])
+    :key       :hand/play-card-update
+    :update-fn #(rules/play-card % player card)}])
 
 (defn current-player-pulse [duration]
   {:type       :animation
