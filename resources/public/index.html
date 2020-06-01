@@ -1,10 +1,91 @@
 <!doctype html>
 <html>
   <head><title>Briscola</title></head>
-  <link rel="stylesheet" href="/css/hands.css">
+  <link rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
+        crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Italiana&display=swap" rel="stylesheet">
+
+  <style>
+    html, body, #menu { margin: 0; padding: 0; }
+    #menu {
+        background-image: url('/img/tabletopsmall.jpg');
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-position: center;
+    }
+    #nonnas-hands {
+        font-size: 52pt;
+        font-family: Brush Script MT;
+        color:#1a77ba;
+    }
+    #briscola {
+        text-shadow: 0 0 2px black, 0 0 1px black;
+        font-size:38pt;
+        font-family: 'Italiana', serif;
+        font-weight: bolder;
+        color:#1a77ba;
+    }
+  </style>
   <body>
-    <div id="app"></div>
+
+    <div id="menu" class="container-fluid" style="height: 100vh">
+      <div class="pt-5">
+        <h1 id="nonnas-hands" class="text-center">
+          Nonna's Hands</h1>
+        <h2 id="briscola" class="text-center">
+          <span style="color:#008c45">Bri</span><span style="color:#f4f5f0">sc</span><span style="color:#cd212a">ola</span>
+        </h2>
+
+        <div class="row">
+          <div class="col"></div>
+          <div class="col-">
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="player-name-text">Player Name</span>
+              </div>
+              <input type="text"
+                     class="form-control"
+                     placeholder="Player Name"
+                     aria-label="Player Name"
+                     aria-describedby="player-name-text">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <button class="btn btn-success" type="button" id="create-room-btn">+ Create Room</button>
+              </div>
+              <input type="text"
+                     class="form-control"
+                     placeholder="Room Name"
+                     aria-label="Room Name"
+                     aria-describedby="create-room-btn">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <button class="btn btn-success" type="button" id="join-room-btn">Join Room</button>
+              </div>
+              <select class="custom-select"
+                      id="join-room-select"
+                      aria-label="Join Room Name">
+                <option selected>Choose...</option>
+                <option value="1">One</option>
+                <option value="2">Two</option>
+                <option value="3">Three</option>
+              </select>
+            </div>
+
+          </div>
+          <div class="col"></div>
+        </div>
+      </div>
+    </div>
+
     <script src="/js/main.js"></script>
     <script>nonnas_hands.briscola.ui.browser.init();</script>
+
   </body>
 </html>
