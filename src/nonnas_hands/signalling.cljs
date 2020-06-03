@@ -36,7 +36,7 @@
                                     :created-at (.now firebase/firestore.Timestamp)}))
                     ref)]
     (go
-      (loop [codes room-codes]
+      (loop [codes (shuffle room-codes)]
         (let [ref  (.doc (.collection db "rooms") (first codes))
               room (.data (<p! (.get ref)))]
           (if room
@@ -66,27 +66,18 @@
 (defn get-local-player-name []
   (.getItem js/window.localStorage "nonnas-hands/player-name"))
 
-(defn add-room-options
-  "
-  Adds the given rooms as options to the room selector list.
-  Clears the list first.
-  "
-  [rooms]
-  (let [room-select (.querySelector js/document "#join-room-select")]
-    (set! (.-innerHTML room-select) "")
-    (doseq [room rooms]
-      (let [room-id (goog.object/get (.data room) "name")]
-        (.add room-select
-              (doto (.createElement js/document "option")
-                (goog.object/set "text" room-id)
-                (goog.object/set "value" room-id)))))))
 
-(defn update-room-options [db]
-  (let [rooms-ref (.collection db "rooms")]
-    (go
-      (add-room-options (.-docs (<p! (.get rooms-ref)))))
-    (.onSnapshot rooms-ref
-                 (fn [rooms-snapshot]
-                   (add-room-options (.-docs rooms-snapshot))))))
+(defn ^:export init []
+  (init-db)
+  (let [player-name (.getItem js/window.localStorage "nonnas-hands/player-name")
+        room-id     (.get (js/URLSearchParams. js/window.location.search) "room-id")]
+    (set! (.-value (.querySelector js/document "#player-name-input")) player-name)
+    (if room-id
+      (do
+        (set! (.-hidden (.querySelector js/document "#create-room-div")) true)
+        (set! (.-value (.querySelector js/document "#join-room-input")) room-id))
+      (do
+        (set! (.-hidden (.querySelector js/document "#join-room-div")) true)))))
+
 
 (def peer (Peer. #js {:initiator true}))
