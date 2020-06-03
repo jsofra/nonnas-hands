@@ -28,12 +28,9 @@
           d A-Z]
       (str a b c d))))
 
-(defn create-room [db room-name player-id]
+(defn generate-room [db]
   (let [set-room  (fn [ref]
-                    (.set ref
-                          (clj->js {:name       room-name
-                                    :owner      player-id
-                                    :created-at (.now firebase/firestore.Timestamp)}))
+                    (.set ref (clj->js {:created-at (.now firebase/firestore.Timestamp)}))
                     ref)]
     (go
       (loop [codes (shuffle room-codes)]
@@ -79,5 +76,11 @@
       (do
         (set! (.-hidden (.querySelector js/document "#join-room-div")) true)))))
 
+(defn ^:export create-room []
+  (go
+    (let [db      (firebase/firestore)
+          room-id (<! (generate-room db))
+          player-name (.-value (.querySelector js/document "#player-name-input"))]
+      (<! (create-player db room-id player-name)))))
 
 (def peer (Peer. #js {:initiator true}))
