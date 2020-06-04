@@ -114,7 +114,7 @@
 (defn ^:export join-room []
   (go
     (let [db      (firebase/firestore)
-          room-id (<! (generate-room db))]
+          room-id (.get (js/URLSearchParams. js/window.location.search) "room-id")]
       (init-wait db room-id "#wait-join"))))
 
 (def peer (Peer. #js {:initiator true}))
