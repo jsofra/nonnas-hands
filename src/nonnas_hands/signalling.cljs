@@ -59,23 +59,6 @@
     (let [players-ref (<p! (.get (get-players-ref db room-id)))]
       (mapv #(.data %) (.-docs players-ref)))))
 
-
-(defn get-local-player-name []
-  (.getItem js/window.localStorage "nonnas-hands/player-name"))
-
-
-(defn ^:export init []
-  (init-db)
-  (let [player-name (.getItem js/window.localStorage "nonnas-hands/player-name")
-        room-id     (.get (js/URLSearchParams. js/window.location.search) "room-id")]
-    (set! (.-value (.querySelector js/document "#player-name-input")) player-name)
-    (if room-id
-      (do
-        (set! (.-hidden (.querySelector js/document "#init-join")) false)
-        (set! (.-value (.querySelector js/document "#join-room-input")) room-id))
-      (do
-        (set! (.-hidden (.querySelector js/document "#init-create")) false)))))
-
 (defn populate-players-list [players]
   (js/console.log players)
   (let [players-list (.querySelector js/document "#players-list")]
@@ -83,14 +66,18 @@
     (doseq [player players]
       (let [player-data (.data player)]
         (.appendChild players-list
-                      (doto (.createElement js/document "LI")
+                      (doto (.createElement js/document "li")
                         (goog.object/set "innerText"
                                          (goog.object/get player-data "name"))
                         (goog.object/set "className" "list-group-item")))))))
 
 (defn set-room-url [room-id]
   (set! (.-innerText (.querySelector js/document "#room-url"))
-        (str js/window.location.href "?room-id=" room-id)))
+        (str js/window.location.protocol
+             "//"
+             js/window.location.host
+             js/window.location.pathname
+             "?room-id=" room-id)))
 
 (defn init-wait [db room-id wait-element]
   (let [room-id     room-id
@@ -116,5 +103,20 @@
     (let [db      (firebase/firestore)
           room-id (.get (js/URLSearchParams. js/window.location.search) "room-id")]
       (init-wait db room-id "#wait-join"))))
+
+(defn ^:export copy-url []
+  (.writeText js/navigator.clipboard
+              (.-innerText (.querySelector js/document "#room-url"))))
+
+(defn ^:export init []
+  (init-db)
+  (let [player-name (.getItem js/window.localStorage "nonnas-hands/player-name")
+        room-id     (.get (js/URLSearchParams. js/window.location.search) "room-id")]
+    (set! (.-value (.querySelector js/document "#player-name-input")) player-name)
+    (if room-id
+      (do
+        (set! (.-hidden (.querySelector js/document "#init-join")) false)
+        (set! (.-value (.querySelector js/document "#join-room-input")) room-id))
+      (set! (.-hidden (.querySelector js/document "#init-create")) false))))
 
 (def peer (Peer. #js {:initiator true}))

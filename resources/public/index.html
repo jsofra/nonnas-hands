@@ -20,6 +20,11 @@
         font-family: Brush Script MT;
         color:#1a77ba;
     }
+    #players-heading {
+        font-size: 24pt;
+        color:#1a77ba;
+        font-weight: bolder;
+    }
     #briscola {
         text-shadow: 0 0 2px black, 0 0 1px black;
         font-size:38pt;
@@ -56,12 +61,22 @@
 
             <div id="init">
               <div id="init-create" class="input-group mb-3" hidden>
-                <button class="btn btn-success" type="button" id="create-room-btn">+ Create Room</button>
+                <button id="create-room-btn"
+                        class="btn btn-success"
+                        type="button"
+                        onclick="nonnas_hands.signalling.create_room()">
+                  + Create Room
+                </button>
               </div>
 
               <div id="init-join" class="input-group mb-3" hidden>
                 <div class="input-group-prepend">
-                  <button id="join-room-btn" class="btn btn-success" type="button">Join Room</button>
+                  <button id="join-room-btn"
+                          class="btn btn-success"
+                          type="button"
+                          onclick="nonnas_hands.signalling.join_room()">
+                    Join Room
+                  </button>
                 </div>
                 <input id="join-room-input"
                        type="text"
@@ -76,7 +91,10 @@
               <div class="alert alert-primary" role="alert">
                 Share room:
                 <span id="room-url">http://localhost:3000/</span>
-                <button id="copy-url-btn" class="btn btn-info" type="button">
+                <button id="copy-url-btn"
+                        class="btn btn-info"
+                        type="button"
+                        onclick="nonnas_hands.signalling.copy_url()">
                   <span style="font-size: .875em; margin-right: .125em; position: relative; top: -.25em; left: -.125em">
                     &#128196;<span style="position: absolute; top: .25em; left: .25em">&#128196;</span>
                     copy
@@ -85,7 +103,7 @@
 
               </div>
 
-              <h4><span class="badge badge-info">Players</span></h4>
+              <div id="players-heading">Players</div>
               <ul id="players-list" class="list-group">
                 <li class="list-group-item">Empty room ...</li>
               </ul>
