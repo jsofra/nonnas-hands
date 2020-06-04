@@ -71,16 +71,50 @@
     (set! (.-value (.querySelector js/document "#player-name-input")) player-name)
     (if room-id
       (do
-        (set! (.-hidden (.querySelector js/document "#create-room-div")) true)
+        (set! (.-hidden (.querySelector js/document "#init-join")) false)
         (set! (.-value (.querySelector js/document "#join-room-input")) room-id))
       (do
-        (set! (.-hidden (.querySelector js/document "#join-room-div")) true)))))
+        (set! (.-hidden (.querySelector js/document "#init-create")) false)))))
+
+(defn populate-players-list [players]
+  (js/console.log players)
+  (let [players-list (.querySelector js/document "#players-list")]
+    (set! (.-innerHTML players-list) "")
+    (doseq [player players]
+      (let [player-data (.data player)]
+        (.appendChild players-list
+                      (doto (.createElement js/document "LI")
+                        (goog.object/set "innerText"
+                                         (goog.object/get player-data "name"))
+                        (goog.object/set "className" "list-group-item")))))))
+
+(defn set-room-url [room-id]
+  (set! (.-innerText (.querySelector js/document "#room-url"))
+        (str js/window.location.href "?room-id=" room-id)))
+
+(defn init-wait [db room-id wait-element]
+  (let [room-id     room-id
+        player-name (.-value (.querySelector js/document "#player-name-input"))
+        players-ref (get-players-ref db room-id)]
+    (set-room-url room-id)
+    (.onSnapshot players-ref
+                 (fn [players-snapshot]
+                   (populate-players-list (.-docs players-snapshot))))
+    (go (<! (create-player db room-id player-name)))
+    (set! (.-hidden (.querySelector js/document "#init")) true)
+    (set! (.-hidden (.querySelector js/document "#wait")) false)
+    (set! (.-hidden (.querySelector js/document wait-element)) false)))
 
 (defn ^:export create-room []
   (go
     (let [db      (firebase/firestore)
-          room-id (<! (generate-room db))
-          player-name (.-value (.querySelector js/document "#player-name-input"))]
-      (<! (create-player db room-id player-name)))))
+          room-id (<! (generate-room db))]
+      (init-wait db room-id "#wait-create"))))
+
+(defn ^:export join-room []
+  (go
+    (let [db      (firebase/firestore)
+          room-id (<! (generate-room db))]
+      (init-wait db room-id "#wait-join"))))
 
 (def peer (Peer. #js {:initiator true}))

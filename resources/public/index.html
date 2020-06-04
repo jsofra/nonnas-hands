@@ -54,20 +54,60 @@
                      aria-describedby="player-name-text">
             </div>
 
-            <div id="create-room-div" class="input-group mb-3">
+            <div id="init">
+              <div id="init-create" class="input-group mb-3" hidden>
                 <button class="btn btn-success" type="button" id="create-room-btn">+ Create Room</button>
+              </div>
+
+              <div id="init-join" class="input-group mb-3" hidden>
+                <div class="input-group-prepend">
+                  <button id="join-room-btn" class="btn btn-success" type="button">Join Room</button>
+                </div>
+                <input id="join-room-input"
+                       type="text"
+                       class="form-control"
+                       placeholder="Room Id"
+                       aria-label="Join Room Name"
+                       aria-describedby="join-room-btn">
+              </div>
             </div>
 
-            <div id="join-room-div" class="input-group mb-3">
-              <div class="input-group-prepend">
-                <button id="join-room-btn" class="btn btn-success" type="button">Join Room</button>
+            <div id="wait" hidden>
+              <div class="alert alert-primary" role="alert">
+                Share room:
+                <span id="room-url">http://localhost:3000/</span>
+                <button id="copy-url-btn" class="btn btn-info" type="button">
+                  <span style="font-size: .875em; margin-right: .125em; position: relative; top: -.25em; left: -.125em">
+                    &#128196;<span style="position: absolute; top: .25em; left: .25em">&#128196;</span>
+                    copy
+                  </span>
+                </button>
+
               </div>
-              <input id="join-room-input"
-                     type="text"
-                     class="form-control"
-                     placeholder="Room Id"
-                     aria-label="Join Room Name"
-                     aria-describedby="join-room-btn">
+
+              <h4><span class="badge badge-info">Players</span></h4>
+              <ul id="players-list" class="list-group">
+                <li class="list-group-item">Empty room ...</li>
+              </ul>
+
+              <div id="wait-create" hidden>
+                <div class="alert alert-info" role="alert">
+                  Wait for players to join and start the game!
+                </div>
+                <div class="input-group-prepend">
+                  <button id="join-room-btn" class="btn btn-success" type="button">Start game!</button>
+                </div>
+              </div>
+
+              <div id="wait-join" hidden>
+                <div class="alert alert-info" role="alert">
+                  Waiting for the game to start!
+                </div>
+                <div class="spinner-border text-info" role="status">
+                  <span class="sr-only">Loading...</span>
+                </div>
+              </div>
+
             </div>
 
           </div>
