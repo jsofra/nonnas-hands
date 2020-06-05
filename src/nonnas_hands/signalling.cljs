@@ -16,6 +16,12 @@
                           :appId             "1:56659697076:web:c6a159b3e0d5fb1c57a6e1"
                           :measurementId     "G-7KN5ZC5M50"})
 
+(defonce state (atom {:peers {}}))
+
+(def storage (if ^boolean js/goog.DEBUG
+               js/window.sessionStorage
+               js/window.localStorage))
+
 (defn init-db []
   (firebase/initializeApp firebase-config)
   (firebase/analytics))
@@ -50,8 +56,8 @@
 (defn create-player [db room-id player-name]
   (go
     (let [player-ref (<p! (.add (get-players-ref db room-id) (clj->js {:name player-name})))]
-      (.setItem js/window.localStorage (str "nonnas-hands/player-id-" room-id) (.-id player-ref))
-      (.setItem js/window.localStorage "nonnas-hands/player-name" player-name)
+      (.setItem storage (str "nonnas-hands/player-id-" room-id) (.-id player-ref))
+      (.setItem storage "nonnas-hands/player-name" player-name)
       player-ref)))
 
 (defn get-players [db room-id]
@@ -60,7 +66,6 @@
       (mapv #(.data %) (.-docs players-ref)))))
 
 (defn populate-players-list [players]
-  (js/console.log players)
   (let [players-list (.querySelector js/document "#players-list")]
     (set! (.-innerHTML players-list) "")
     (doseq [player players]
@@ -110,7 +115,7 @@
 
 (defn ^:export init []
   (init-db)
-  (let [player-name (.getItem js/window.localStorage "nonnas-hands/player-name")
+  (let [player-name (.getItem storage "nonnas-hands/player-name")
         room-id     (.get (js/URLSearchParams. js/window.location.search) "room-id")]
     (set! (.-value (.querySelector js/document "#player-name-input")) player-name)
     (if room-id
@@ -118,5 +123,24 @@
         (set! (.-hidden (.querySelector js/document "#init-join")) false)
         (set! (.-value (.querySelector js/document "#join-room-input")) room-id))
       (set! (.-hidden (.querySelector js/document "#init-create")) false))))
+
+(defn connect-with-peer [])
+
+(defn create-pairings [players]
+  (->> (for [a players
+             b players
+             :when (not= a b)]
+         [a b])
+       (group-by set)
+       vals
+       (mapv first)))
+
+(defn peers-config [this-id pairings]
+  (apply merge
+         (for [[a b] pairings
+               :let [peer-id (if (= a this-id) b a)]
+               :when (or (= a this-id) (= b this-id))]
+           {peer-id {:initiator (= a this-id)}})))
+
 
 (def peer (Peer. #js {:initiator true}))
