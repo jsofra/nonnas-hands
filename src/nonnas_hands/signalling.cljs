@@ -16,7 +16,8 @@
                           :appId             "1:56659697076:web:c6a159b3e0d5fb1c57a6e1"
                           :measurementId     "G-7KN5ZC5M50"})
 
-(defonce state (atom {:peers {}}))
+(defonce state (atom {:peers     {}
+                      :player-id nil}))
 
 (def storage (if ^boolean js/goog.DEBUG
                js/window.sessionStorage
@@ -63,7 +64,7 @@
 (defn get-players [db room-id]
   (go
     (let [players-ref (<p! (.get (get-players-ref db room-id)))]
-      (mapv #(.data %) (.-docs players-ref)))))
+      (.-docs players-ref))))
 
 (defn populate-players-list [players]
   (let [players-list (.querySelector js/document "#players-list")]
@@ -84,48 +85,6 @@
              js/window.location.pathname
              "?room-id=" room-id)))
 
-(defn init-wait [db room-id wait-element]
-  (let [room-id     room-id
-        player-name (.-value (.querySelector js/document "#player-name-input"))
-        players-ref (get-players-ref db room-id)]
-    (set-room-url room-id)
-    (.onSnapshot players-ref
-                 (fn [players-snapshot]
-                   (populate-players-list (.-docs players-snapshot))))
-    (go (<! (create-player db room-id player-name)))
-    (set! (.-hidden (.querySelector js/document "#init")) true)
-    (set! (.-hidden (.querySelector js/document "#wait")) false)
-    (set! (.-hidden (.querySelector js/document wait-element)) false)))
-
-(defn ^:export create-room []
-  (go
-    (let [db      (firebase/firestore)
-          room-id (<! (generate-room db))]
-      (init-wait db room-id "#wait-create"))))
-
-(defn ^:export join-room []
-  (go
-    (let [db      (firebase/firestore)
-          room-id (.get (js/URLSearchParams. js/window.location.search) "room-id")]
-      (init-wait db room-id "#wait-join"))))
-
-(defn ^:export copy-url []
-  (.writeText js/navigator.clipboard
-              (.-innerText (.querySelector js/document "#room-url"))))
-
-(defn ^:export init []
-  (init-db)
-  (let [player-name (.getItem storage "nonnas-hands/player-name")
-        room-id     (.get (js/URLSearchParams. js/window.location.search) "room-id")]
-    (set! (.-value (.querySelector js/document "#player-name-input")) player-name)
-    (if room-id
-      (do
-        (set! (.-hidden (.querySelector js/document "#init-join")) false)
-        (set! (.-value (.querySelector js/document "#join-room-input")) room-id))
-      (set! (.-hidden (.querySelector js/document "#init-create")) false))))
-
-(defn connect-with-peer [])
-
 (defn create-pairings [players]
   (->> (for [a players
              b players
@@ -142,5 +101,110 @@
                :when (or (= a this-id) (= b this-id))]
            {peer-id {:initiator (= a this-id)}})))
 
+(defn get-peer-ref [db room-id player-id peer-id]
+  (-> db
+      (get-players-ref room-id)
+      (.doc player-id)
+      (.collection "peers")
+      (.doc peer-id)))
+
+(defn add-peer-signalling [db room-id player-id peer-id data]
+  (-> (get-peer-ref db room-id player-id peer-id)
+      (.set #js {"signalling" data})))
+
+(defn create-peer [state db room-id player-id [peer-id peer-config]]
+  (let [peer (Peer. (clj->js peer-config))]
+
+    (-> (get-peer-ref db room-id peer-id player-id)
+        (.onSnapshot
+         (fn [peer-snapshot]
+           (let [signal-data (.get peer-snapshot "signalling")]
+             (when signal-data
+               (js/console.log "SIG" signal-data)
+               (.signal peer signal-data))))))
+
+    (doto peer
+      (.on "signal"
+           (fn [data]
+             (add-peer-signalling db room-id player-id peer-id (clj->js data))))
+      (.on "connect"
+           (fn []
+             (.send peer (str "Connecting with " player-id))
+             (swap! state assoc-in [:peers peer-id :connected] true)))
+      (.on "data"
+           (fn [data]
+             (js/console.log (str "Got a message: " data)))))
+
+    (swap! state assoc-in [:peers peer-id :peer] peer)))
+
+(defn get-peers-config [state db room-id]
+  (go
+    (let [{:keys [player-id]} @state]
+      (->> (<! (get-players db room-id))
+           (map #(.-id %))
+           create-pairings
+           (peers-config player-id)))))
+
+(defn create-peers [state db peers-config]
+  (let [{:keys [room-id player-id peers]} @state]
+    (doseq [peer-config peers-config]
+      (create-peer state db room-id player-id peer-config))))
+
+(defn wait-for-start [state db room-id]
+  (.onSnapshot (.doc (.collection db "rooms") room-id)
+               (fn [snapshot]
+                 (when (.get snapshot "game-started")
+                   (go
+                     (create-peers state db (<! (get-peers-config state db room-id))))))))
+
+(defn init-wait [state db room-id wait-element]
+  (let [player-name (.-value (.querySelector js/document "#player-name-input"))
+        players-ref (get-players-ref db room-id)]
+    (set-room-url room-id)
+    (.onSnapshot players-ref
+                 (fn [players-snapshot]
+                   (populate-players-list (.-docs players-snapshot))))
+    (go (swap! state
+               assoc
+               :room-id room-id
+               :player-id (.-id (<! (create-player db room-id player-name)))))
+    (set! (.-hidden (.querySelector js/document "#init")) true)
+    (set! (.-hidden (.querySelector js/document "#wait")) false)
+    (set! (.-hidden (.querySelector js/document wait-element)) false)
+
+    (wait-for-start state db room-id)))
+
+(defn ^:export create-room []
+  (go
+    (let [db      (firebase/firestore)
+          room-id (<! (generate-room db))]
+      (init-wait state db room-id "#wait-create"))))
+
+(defn ^:export join-room []
+  (go
+    (let [db      (firebase/firestore)
+          room-id (.get (js/URLSearchParams. js/window.location.search) "room-id")]
+      (init-wait state db room-id "#wait-join"))))
+
+(defn ^:export copy-url []
+  (.writeText js/navigator.clipboard
+              (.-innerText (.querySelector js/document "#room-url"))))
+
+(defn ^:export init []
+  (init-db)
+  (let [player-name (.getItem storage "nonnas-hands/player-name")
+        room-id     (.get (js/URLSearchParams. js/window.location.search) "room-id")]
+    (set! (.-value (.querySelector js/document "#player-name-input")) player-name)
+    (if room-id
+      (do
+        (set! (.-hidden (.querySelector js/document "#init-join")) false)
+        (set! (.-value (.querySelector js/document "#join-room-input")) room-id))
+      (set! (.-hidden (.querySelector js/document "#init-create")) false))))
+
+
+(defn start-game [db room-id]
+  (-> (.collection db "rooms")
+      (.doc room-id)
+      (.update #js {:game-started true})))
 
 (def peer (Peer. #js {:initiator true}))
